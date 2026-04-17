@@ -125,7 +125,28 @@ bool CTradePanel::PlaceMarket(const ENUM_ORDER_TYPE type)
    return(ok);
   }
 
-bool CTradePanel::CloseByPercentAll(const double pct,const int filter_mode)
+bool CTradePanel::IsPositionMatched(const ENUM_POSITION_TYPE ptype,const double profit,const EPositionFilter filter) const
+  {
+   if(filter==FILTER_SELL && ptype!=POSITION_TYPE_SELL)
+      return(false);
+   if(filter==FILTER_BUY && ptype!=POSITION_TYPE_BUY)
+      return(false);
+   if(filter==FILTER_PROFIT && profit<=0.0)
+      return(false);
+   if(filter==FILTER_LOSS && profit>=0.0)
+      return(false);
+   return(true);
+  }
+
+bool CTradePanel::ClosePositionByPercent(const ulong ticket,const double volume,const double pct)
+  {
+   const double close_volume=NormalizeVolume(volume*pct/100.0);
+   if(close_volume>=volume-0.0000001)
+      return(m_trade.PositionClose(ticket));
+   return(m_trade.PositionClosePartial(ticket,close_volume));
+  }
+
+bool CTradePanel::CloseByPercentAll(const double pct,const EPositionFilter filter)
   {
    bool ok=true;
    for(int i=PositionsTotal()-1; i>=0; --i)
@@ -138,24 +159,11 @@ bool CTradePanel::CloseByPercentAll(const double pct,const int filter_mode)
 
       ENUM_POSITION_TYPE ptype=(ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
       double profit=PositionGetDouble(POSITION_PROFIT);
-
-      if(filter_mode==1 && ptype!=POSITION_TYPE_SELL)
-         continue;
-      if(filter_mode==2 && ptype!=POSITION_TYPE_BUY)
-         continue;
-      if(filter_mode==3 && profit<=0.0)
-         continue;
-      if(filter_mode==4 && profit>=0.0)
+      if(!IsPositionMatched(ptype,profit,filter))
          continue;
 
       double volume=PositionGetDouble(POSITION_VOLUME);
-      double close_volume=NormalizeVolume(volume*pct/100.0);
-
-      bool one_ok;
-      if(close_volume>=volume-0.0000001)
-         one_ok=m_trade.PositionClose(ticket);
-      else
-         one_ok=m_trade.PositionClosePartial(ticket,close_volume);
+      bool one_ok=ClosePositionByPercent(ticket,volume,pct);
 
       if(!one_ok)
         {
@@ -180,11 +188,7 @@ bool CTradePanel::CloseSelectedByPercent(void)
    double pct=ReadPercentValue();
    double volume=PositionGetDouble(POSITION_VOLUME);
    double close_volume=NormalizeVolume(volume*pct/100.0);
-   bool ok;
-   if(close_volume>=volume-0.0000001)
-      ok=m_trade.PositionClose(g_selected_position_ticket);
-   else
-      ok=m_trade.PositionClosePartial(g_selected_position_ticket,close_volume);
+   bool ok=ClosePositionByPercent(g_selected_position_ticket,volume,pct);
 
    if(!ok)
       Print("CloseSelectedByPercent failed, ticket=",g_selected_position_ticket," retcode=",m_trade.ResultRetcode());
@@ -215,18 +219,18 @@ bool CTradePanel::MoveAllToBreakeven(void)
    return(ok);
   }
 
-bool CTradePanel::OnClickCloseAll(void)      { return(CloseByPercentAll(100.0,0)); }
+bool CTradePanel::OnClickCloseAll(void)      { return(CloseByPercentAll(100.0,FILTER_ALL)); }
 bool CTradePanel::OnClickCloseSelected(void)
    {
     Print("[CloseSelected] button click");
     return(CloseSelectedByPercent());
    }
-bool CTradePanel::OnClickClose50(void)       { return(CloseByPercentAll(50.0,0)); }
-bool CTradePanel::OnClickClose80(void)       { return(CloseByPercentAll(80.0,0)); }
-bool CTradePanel::OnClickCloseSell(void)     { return(CloseByPercentAll(100.0,1)); }
-bool CTradePanel::OnClickCloseBuy(void)      { return(CloseByPercentAll(100.0,2)); }
-bool CTradePanel::OnClickCloseProfit(void)   { return(CloseByPercentAll(100.0,3)); }
-bool CTradePanel::OnClickCloseLoss(void)     { return(CloseByPercentAll(100.0,4)); }
+bool CTradePanel::OnClickClose50(void)       { return(CloseByPercentAll(50.0,FILTER_ALL)); }
+bool CTradePanel::OnClickClose80(void)       { return(CloseByPercentAll(80.0,FILTER_ALL)); }
+bool CTradePanel::OnClickCloseSell(void)     { return(CloseByPercentAll(100.0,FILTER_SELL)); }
+bool CTradePanel::OnClickCloseBuy(void)      { return(CloseByPercentAll(100.0,FILTER_BUY)); }
+bool CTradePanel::OnClickCloseProfit(void)   { return(CloseByPercentAll(100.0,FILTER_PROFIT)); }
+bool CTradePanel::OnClickCloseLoss(void)     { return(CloseByPercentAll(100.0,FILTER_LOSS)); }
 bool CTradePanel::OnClickBreakEven(void)     { return(MoveAllToBreakeven()); }
 bool CTradePanel::OnClickLot01(void)         { return(m_lotEdit.Text("0.1")); }
 bool CTradePanel::OnClickLot02(void)         { return(m_lotEdit.Text("0.2")); }

@@ -8,6 +8,14 @@
 color RGBc(const int r,const int g,const int b);
 extern ulong g_selected_position_ticket;
 extern bool  g_selected_is_position;
+enum EPositionFilter
+  {
+   FILTER_ALL=0,
+   FILTER_SELL,
+   FILTER_BUY,
+   FILTER_PROFIT,
+   FILTER_LOSS
+  };
 
 class CTradePanel : public CAppDialog
   {
@@ -70,7 +78,9 @@ protected:
    double            ReadLotValue(void) const;
    double            ReadPercentValue(void) const;
    double            NormalizeVolume(const double requested) const;
-   bool              CloseByPercentAll(const double pct,const int filter_mode=0);
+   bool              IsPositionMatched(const ENUM_POSITION_TYPE ptype,const double profit,const EPositionFilter filter) const;
+   bool              ClosePositionByPercent(const ulong ticket,const double volume,const double pct);
+   bool              CloseByPercentAll(const double pct,const EPositionFilter filter=FILTER_ALL);
    bool              PlaceMarket(const ENUM_ORDER_TYPE type);
    bool              ReadStops(const ENUM_ORDER_TYPE type,double &sl,double &tp) const;
    bool              MoveAllToBreakeven(void);
