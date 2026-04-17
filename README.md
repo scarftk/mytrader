@@ -2,6 +2,8 @@
 
 仅说明面板中每个按钮的当前功能。
 
+<img width="2559" height="1193" alt="image" src="https://github.com/user-attachments/assets/f5940b82-c840-4157-917e-61544fddc47e" />
+
 ## 顶部区域
 
 - 一键平仓：平掉当前品种全部持仓。
