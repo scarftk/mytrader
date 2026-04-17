@@ -32,8 +32,10 @@ class COrderListDialog : public CAppDialog
 private:
    CListView m_list;
    CTrade    m_trade;
+  int       m_prev_positions_total;
 
 public:
+  COrderListDialog(void) : m_prev_positions_total(0) {}
   virtual bool OnEvent(const int id,const long &lparam,const double &dparam,const string &sparam);
    virtual bool Create(const long chart,const string name,const int subwin,const int x1,const int y1,const int x2,const int y2)
      {
@@ -61,12 +63,15 @@ public:
       m_list.ItemsClear();
       int shown=0;
       ulong latest_position_ticket=0;
+    int current_positions_total=0;
 
       for(int i=PositionsTotal()-1; i>=0; --i)
         {
          ulong ticket=PositionGetTicket(i);
          if(ticket==0 || !PositionSelectByTicket(ticket))
             continue;
+
+      current_positions_total++;
 
          if(latest_position_ticket==0)
             latest_position_ticket=ticket;
@@ -100,8 +105,9 @@ public:
          shown++;
         }
 
-      // Default behavior: always keep latest position selected when positions exist.
-      if(latest_position_ticket>0)
+      // Auto-select only when positions have increased (new opening), otherwise keep manual choice.
+      bool auto_select_latest=(current_positions_total>m_prev_positions_total && latest_position_ticket>0);
+      if(auto_select_latest)
         {
          g_selected_position_ticket=latest_position_ticket;
          g_selected_is_position=true;
@@ -122,6 +128,8 @@ public:
          g_selected_position_ticket=0;
          g_selected_is_position=false;
         }
+
+      m_prev_positions_total=current_positions_total;
      }
 
 protected:

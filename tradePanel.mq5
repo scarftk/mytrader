@@ -195,23 +195,23 @@ bool CTradePanel::CloseSelectedByPercent(void)
 
 bool CTradePanel::MoveAllToBreakeven(void)
   {
-   bool ok=true;
-   for(int i=PositionsTotal()-1; i>=0; --i)
+   if(!g_selected_is_position || g_selected_position_ticket==0)
      {
-      ulong ticket=PositionGetTicket(i);
-      if(ticket==0 || !PositionSelectByTicket(ticket))
-         continue;
-      if(PositionGetString(POSITION_SYMBOL)!=_Symbol)
-         continue;
-
-      double open_price=PositionGetDouble(POSITION_PRICE_OPEN);
-      double tp=PositionGetDouble(POSITION_TP);
-      if(!m_trade.PositionModify(ticket,open_price,tp))
-        {
-         ok=false;
-         Print("MoveAllToBreakeven failed, ticket=",ticket," retcode=",m_trade.ResultRetcode());
-        }
+      Print("No selected position for breakeven");
+      return(false);
      }
+
+   if(!PositionSelectByTicket(g_selected_position_ticket))
+     {
+      Print("Selected position no longer exists, ticket=",g_selected_position_ticket);
+      return(false);
+     }
+
+   double open_price=PositionGetDouble(POSITION_PRICE_OPEN);
+   double tp=PositionGetDouble(POSITION_TP);
+   bool ok=m_trade.PositionModify(g_selected_position_ticket,open_price,tp);
+   if(!ok)
+      Print("MoveAllToBreakeven failed, ticket=",g_selected_position_ticket," retcode=",m_trade.ResultRetcode());
    return(ok);
   }
 
